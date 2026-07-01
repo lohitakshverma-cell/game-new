@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-montserrat: 'Montserrat';
+  --font-inter: 'Inter';
+  --cream: #f7f3ec;
+  --ink: #1a1a18;
+  --stone: #6b6862;
+  --bone: #e5ddd3;
+  --terracotta: #b96e4f;
+  --amber: #92400e;
+  --sage: #7b8c6e;
+}
+
+html,
+body {
+  background: #fefdfb;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ingredient-label / percentage chip — the brand hallmark */
+.chip {
+  @apply inline-flex items-center rounded-full border border-bone bg-white px-2.5 py-0.5 font-mono text-[11px] tracking-label text-terracotta;
+}
+
+.card-surface {
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(185, 110, 79, 0.06) 0%, rgba(185, 110, 79, 0) 45%),
+    radial-gradient(120% 120% at 0% 100%, rgba(123, 140, 110, 0.08) 0%, rgba(123, 140, 110, 0) 45%),
+    #ffffff;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-full bg-terracotta px-6 py-3 font-heading text-sm font-semibold tracking-wide text-white transition hover:bg-amber disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-full border border-bone bg-white px-6 py-3 font-heading text-sm font-semibold tracking-wide text-ink transition hover:border-terracotta hover:text-terracotta;
+}
+
+.field {
+  @apply w-full rounded-xl border border-bone bg-white px-4 py-3 font-body text-ink outline-none transition placeholder:text-stone/60 focus:border-terracotta;
+}
