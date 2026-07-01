@@ -1,16 +1,17 @@
 # Formula Finder
 
 An in-house team microsite for **Minimalist** (beminimalist.co). Each teammate
-verifies their `@beminimalist.co` email, answers **four** tap-to-select questions,
-and gets a personalized "skin persona" card — a playful mashup of a fake signature
-formula, a persona title, and one honest one-liner. Every card lands in a shared
-team gallery where people can heart their favorites. At the end, the most-hearted
+enters their name + email, answers **four** tap-to-select questions, and gets a
+personalized "skin persona" card — a playful mashup of a fake signature formula,
+a persona title, and one honest one-liner. Every card lands in a shared team
+gallery where people can heart their favorites. At the end, the most-hearted
 card wins.
 
-- **No AI at runtime.** All 256 (4×4×4×4) results are composed deterministically
+- **No email verification / OTP.** Name + email -> straight into the game.
+- **No AI at runtime.** All 256 (4x4x4x4) results are composed deterministically
   from a pre-written content bank (`lib/content.ts`).
-- **No accounts / passwords.** Email is used only for one-time OTP verification.
-- **Built to deploy on Vercel's free tier.**
+- **No accounts / passwords.** The email just identifies a player and their record.
+- **No email service needed.** No Resend, no domain setup.
 
 ---
 
@@ -19,29 +20,30 @@ card wins.
 - Next.js 14 (App Router) + React + TypeScript
 - Tailwind CSS (tokenized to the official Minimalist palette + Montserrat/Inter)
 - Vercel KV (Upstash Redis) for shared storage
-- Resend (free tier) for OTP emails
 - `html-to-image` for card download, `canvas-confetti` for the reveal moment
 
 ---
 
 ## How it works
 
-**Flow:** `/` (name + email → 6-digit OTP) → `/play` (4 questions) →
-`/result` (card reveal, auto-saved, download) → `/gallery` (everyone's cards).
+**Flow:** `/` (name + email) -> `/play` (4 questions) -> `/result` (card reveal,
+auto-saved, download) -> `/gallery` (everyone's cards).
 
 **Key rules baked in:**
 
 - **256 combinations** via 4 questions, so cards rarely repeat in the gallery.
   Same answers always produce the same card (deterministic, no AI).
-- **OTP only to `@beminimalist.co`** (set by `ALLOWED_EMAIL_DOMAIN`, defaults to
-  `beminimalist.co`).
+- **Name + email + answers are recorded** for every completed play.
 - **One play per email.** Replays return the person's existing card, not an error.
-- **Reacting requires verification.** Viewing the gallery is open to anyone;
-  hearting a card requires a verified session. This is what makes the winner
-  mechanic honest.
+- **Reacting needs an email.** Viewing the gallery is open to anyone; hearting a
+  card requires having entered an email (so likes can be attributed).
 - **No self-likes.** You can't heart your own card.
 - **Hidden counts.** No one can see how many hearts any card has in the gallery.
 - **Winner = most hearts,** visible only to you on the private `/admin` page.
+
+> Note: because there's no email verification, identity is self-asserted - fine
+> for an internal, trust-based team activity. Someone determined could re-enter a
+> different email to play/like again; the cookie prevents casual duplicates.
 
 ---
 
@@ -49,15 +51,12 @@ card wins.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in values (see below)
+cp .env.example .env.local   # fill in the secrets (see below)
 npm run dev                  # http://localhost:3000
 ```
 
-Without KV or Resend configured, the app still runs locally:
-
-- Storage falls back to an in-memory store (not persistent across restarts).
-- The OTP is **printed to the server console** instead of emailed, so you can
-  test the full flow. Look for `[Formula Finder] OTP for … : 123456`.
+Without KV configured, the app still runs locally - storage falls back to an
+in-memory store (not persistent across restarts).
 
 ---
 
@@ -66,24 +65,11 @@ Without KV or Resend configured, the app still runs locally:
 | Variable | Required | Purpose |
 |---|---|---|
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_URL` | Prod | Vercel KV connection (auto-added when you attach a KV store) |
-| `RESEND_API_KEY` | Prod | Send OTP emails via Resend |
-| `RESEND_FROM` | Recommended | Verified sender, e.g. `Formula Finder <noreply@beminimalist.co>` |
-| `ALLOWED_EMAIL_DOMAIN` | Optional | Defaults to `beminimalist.co` |
-| `SESSION_SECRET` | **Yes** | Long random string; signs the verified-session cookie |
-| `ADMIN_SECRET` | **Yes** | Password for the `/admin` winner dashboard |
+| `ALLOWED_EMAIL_DOMAIN` | Optional | Defaults to `beminimalist.co`. Set to `any` (or `*`) to allow ANY email. |
+| `SESSION_SECRET` | Yes | Long random string; signs the player session cookie |
+| `ADMIN_SECRET` | Yes | Password for the `/admin` winner dashboard |
 
-Generate secrets with e.g. `openssl rand -hex 32`.
-
----
-
-## Provisioning (one-time)
-
-**Vercel KV:** Vercel dashboard → your project → **Storage** → **Create → KV**.
-Connect it to the project; Vercel injects the `KV_*` vars automatically.
-
-**Resend:** create an account at [resend.com](https://resend.com), add + verify a
-sending domain (or use the `onboarding@resend.dev` sandbox for testing), copy the
-API key into `RESEND_API_KEY`, and set `RESEND_FROM` to a verified address.
+Generate the two secrets with e.g. `openssl rand -hex 32`.
 
 ---
 
@@ -91,10 +77,12 @@ API key into `RESEND_API_KEY`, and set `RESEND_FROM` to a verified address.
 
 1. Push this repo to GitHub/GitLab.
 2. Import it in Vercel (framework auto-detected as Next.js).
-3. Attach a KV store (Storage tab) — adds the `KV_*` vars.
-4. Add `RESEND_API_KEY`, `RESEND_FROM`, `SESSION_SECRET`, `ADMIN_SECRET`
-   (and optionally `ALLOWED_EMAIL_DOMAIN`) in **Settings → Environment Variables**.
-5. Deploy. Share the URL with the team.
+3. Attach a KV store: **Storage -> Create Database -> Redis/KV** -> Connect to the
+   project. This injects the `KV_*` vars automatically.
+4. Add `SESSION_SECRET` and `ADMIN_SECRET` (and optionally `ALLOWED_EMAIL_DOMAIN`)
+   in **Settings -> Environment Variables**.
+5. **Redeploy** (env vars only apply to new deployments).
+6. Share the URL with the team.
 
 ---
 
@@ -108,18 +96,15 @@ these counts themselves.
 
 ## Editing the content
 
-All copy lives in two files:
-
-- `lib/questions.ts` — the four questions and their options.
-- `lib/content.ts` — the fragment banks that compose all 256 cards. Edit the
-  `MOOD` / `SIN` / `INGREDIENT` / `SHELF` banks to change tone or wording. Keep it
-  witty and honest — never mean, never body-shaming, never medical advice.
+- `lib/questions.ts` - the four questions and their options.
+- `lib/content.ts` - the fragment banks that compose all 256 cards. Keep it witty
+  and honest - never mean, never body-shaming, never medical advice.
 
 ---
 
 ## Non-goals
 
 - No AI/LLM calls at runtime.
-- No user accounts or passwords (OTP is one-time verification, not login).
+- No email verification, accounts, or passwords.
 - No scoring beyond the hearts-based winner.
-- Collected emails are used only to gate one play per person — never for marketing.
+- Collected emails are used only to identify a player - never for marketing.

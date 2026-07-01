@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const email = verifyToken(cookies().get(SESSION_COOKIE)?.value);
   if (!email) {
     return NextResponse.json(
-      { error: "Verify your email (by playing) to react." },
+      { error: "Enter your email (by playing) to react." },
       { status: 401 }
     );
   }

@@ -23,7 +23,7 @@ export default function Gallery() {
   async function toggleHeart(card: PublicCard) {
     setNote("");
     if (!verified) {
-      setNote("Verify your email (by playing) to react to cards.");
+      setNote("Enter your email (by playing) to react to cards.");
       return;
     }
     if (card.isMine) {

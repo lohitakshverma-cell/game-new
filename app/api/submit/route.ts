@@ -14,7 +14,7 @@ const playedKey = (email: string) => `played:${email.toLowerCase()}`;
 export async function POST(req: Request) {
   const email = verifyToken(cookies().get(SESSION_COOKIE)?.value);
   if (!email) {
-    return NextResponse.json({ error: "Please verify your email first." }, { status: 401 });
+    return NextResponse.json({ error: "Please enter your email first." }, { status: 401 });
   }
 
   let body: { name?: string; q1?: string; q2?: string; q3?: string; q4?: string };
