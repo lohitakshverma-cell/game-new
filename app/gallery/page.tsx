@@ -60,7 +60,7 @@ export default function Gallery() {
             Everyone's Formulas
           </h1>
           <p className="mt-1 text-sm text-stone">
-            Tap the heart on your favorites. Like counts are hidden — the most-loved
+            Tap the heart on your favorites. Like counts are hidden, the most-loved
             card is revealed at the end.
           </p>
         </div>
